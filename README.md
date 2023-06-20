@@ -1,6 +1,7 @@
 # CSS for JS Devs
 
-## Media Queries
+## Fundamentals Recap
+### Media Queries
 
 The web is an incredibly broad platform: the same HTML and CSS might be tasked with running on a 5" phone screen and a 72" TV!
 
@@ -38,7 +39,7 @@ An example:
 
 In this case, the condition is `max-width: 300px`. If the window is between 0px and 300px wide, the CSS within will be applied.
 
-### Hiding content
+#### Hiding content
 
 The conditional ability of media queries allows us to also hide content...
 
@@ -76,14 +77,14 @@ If the window is at least `300px` wide, however, we apply special overrides. Thi
 
 This trick is **often** used for navigation. Desktop users see a list of links, whereas mobile users see a hamburger icon.
 
-### Valid Conditions
+#### Valid Conditions
 
 Inside the parentheses, typically `max-width` to add styles on small screens, or `min-width` to add styles on larger ones. 
 
 > `max-width` and `min-width` are not CSS properties, they are media features.
 > `max-width` is also a css property, but in the context of media queries, remember its a media feature.
 
-## Selectors
+### Selectors
 
 CSS comes with an incredibly rich set of selectors, and those selectors can be mixed and match in interesting ways.
 
@@ -104,7 +105,7 @@ a {
 }
 ```
 
-## Psuedo-classes
+#### Psuedo-classes
 
 Psuedo-classes let us apply a chunk of CSS based on an element's current state.
 
@@ -317,7 +318,7 @@ But, if we switch the selector to `p:first-of-type`, it *does* work:
 The `:first-of-type` pseudo-class ignores any siblings that aren't of the same type.
 In this case, `p:first-of-type` is going to select the first paragraph within a container, regardless of whether or not it's the first child.
 
-## Debugging in the browser
+### Debugging in the browser
 
 Debugging in the browser is what we already know, but a couple nice facts are:
 
@@ -930,7 +931,7 @@ More explanation for the use of a **wrapping element**.
 
 **This is the problem.** `width: auto` has a different meaning for replaced elements. It doesn't mean "stretch out and fill all of the space", it means "use your natural width"!
 
-## Flow Layout
+### Flow Layout
 
 When it comes to layout, CSS is more like a collection of mini-languages than a single cohesive language.
 
@@ -972,7 +973,7 @@ In flow layout, block elements stack in the block direction, and inline elements
 
 It's more than just direction, though. Each `display` value comes with its own behaviour, its own rules.
 
-#### Inline elements don't want to make a fuss
+##### Inline elements don't want to make a fuss
 
 If you've ever tried to adjust the positioning or size of an inline element, you've likely been confounded by the fact that a bunch of CSS properties just don't work.
 
@@ -994,7 +995,7 @@ When it comes to layout, an inline element is where it is, and there's not much 
 > Replaced elements, `img`, `video`, `canvas` are technically inline, but they're special: they can affect block layout.
 
 
-#### Block elements don't share
+##### Block elements don't share
 
 When you place a block level element on the page, its content box greedily expands to fill the entire available horizontal space.
 
@@ -1028,7 +1029,7 @@ There will be plenty of space left on that first row, regardless the `h2` will s
 
 In other words, elements that are `display: block` will stack in the block direction, regardless of their size.
 
-#### Inline elements have "magic space"
+##### Inline elements have "magic space"
 
 In the box model lesson, we saw 3 ways to increase sapce around an element.
 
@@ -1049,7 +1050,7 @@ There are 2 ways to fix this:
 This space is proportional to the height of each line, so if we reduce the line height to 0, this "magic space" goes away.
 Because our container doesn't contain any text, this property has no other effect.
 
-##### Space between inline elements
+###### Space between inline elements
 
 HTML is *space-sensitive*, at least to an extent. The browser can't tell the difference between whitespace added to separate words in a paragraph, and whitespace added to indent our HTML and keep it readable.
 
@@ -1057,7 +1058,7 @@ This problem is specific to Flow-layout. Other layout modes, like Flexbox, ignor
 
 Inline elements can also line-wrap. 
 
-#### The deal with inline-block
+##### The deal with inline-block
 
 Most confusing things about Flow layout is the Frankenstein `display: inline-block` value.
 
@@ -1083,6 +1084,171 @@ However, `inline-block` doesn't line-wrap.
 
 ![line-wrap](images/line-wrap_inline-block.png)
 
-### Width Algorithms
+#### Width Algorithms
 
-### Height Algorithms
+Block-level elements like `h1` and `p` will expand to fill the available space.
+↪ that doesn't mean that they have a default `width` of 100%, but that wouldn't be quite right.
+
+![width](images/width_algorithm.png)
+
+Notice how enabling `width: 100%`, we cause the heading to pop outside of our frame. This happens because of the margin.
+
+When percentage-based widths are used, those percentages are **based on the parent element's content space**.
+
+If the `body` tag makes 400px of space available, any child with 100% width will become 400px wide, regardless of any other circumstances.
+
+Block elements have a default `width` value of `auto`, not `100%`. `width: auto` works very similar to `margin: auto`; it's a hungry value that will grow as mich as its able to, but no more.
+
+In the case above, the `h1` will grow to consume (100% - 32px), since there is 16px of margin on either side.
+
+It's a subtle but **important distinction:** by default, block elements have *dynamic sizing*.
+They're context aware.
+
+##### Keyword values
+
+There are two kinds of values to specify for width:
+
+1. Measurements (100%, 200px, 5rem)
+2. Keywords (auto, fit-content)
+
+Measurement-based values are either completely explicit (eg. 200px), or relative to the parent's available space (eg. 50%).
+Keywords, on the other hand, let us specify different sorts of behaviours depending on the context.
+
+We've already seen how `auto` will let our element greedily consume the available space while respecting any constraints.
+
+##### min-content
+
+When we set `width: min-content`, we're specifying that we want our element to become as narrow as it can, *based on the child contents*.
+This is a totally different perspective: we aren't sizing based on the sapce made available by the parent, we're sizing based on the element's children!
+
+This value is known as an *instrinsic value*, while measurements and the `auto` keyword are *extrinsic*. The distinction is based on whether we're focusing on the element itself, or the element's children!
+
+![min-content](images/min-content_width.png)
+
+In this case, we wind up with a *very* narrow heading, because it chooses the smallest possible value for `width` that still contains each word. Whenever it encounters whitespace or a hyphenated word, it'll break it onto a new line.
+
+This value can be useful for certain kinds of effects.
+
+##### max-content
+
+This value is similar in principle, but it takes an opposite strategy: it *never* adds any line-breaks.
+
+The element's width will be the smallest value that contains the content, without breaking it up:
+
+![max-content](images/max-content_width.png)
+
+As you can see, an element with `width: max-content` pays no attention to the constraints set by the parent. It will size the element based purely on the length of its unbroken children.
+
+Why would this be useful? Well, its produces a nice effect when the content is short enough to fit within the parent.
+
+![max-content2](images/max-content2_width.png)
+
+Unlke with `auto`, `max-content` doesn't fill the available space. If we want to add a background color *only* around the letters, this would be a neat way to do it!
+
+Of course, our work needs to render correctly across screens of all sizes. We can't assume that the container will always be big enough to contain the heading! 
+
+Thankfully, one more value is provided by the browser...
+
+##### fit-content
+
+If these keywords were bowls of porridge, `fit-content` would be the one that Goldilocks declares "just-right".
+
+Here's how it works: like `min-content` and `max-content`, the width is based on the size of the children. If that width can fit within the parent container, it behaves just like `max-content`, not adding any line-breaks.
+
+If the content is too wide to fit in the parent, however, it adds line-breaks as-needed to ensure it never exceeds the available space. It behaves just like `width: auto`.
+
+![fit-content](images/fit-content_width.png)
+
+##### Min and max widths
+
+We can add constraints to an element's size using `min-width` and `max-width`
+
+```html
+<style>
+  h2 {
+    width: fit-content;
+    background-color: peachpuff;
+    margin-bottom: 16px;
+    padding: 8px;
+  }
+</style>
+
+<h2>Short</h2>
+<h2>A mid-length heading</h2>
+<h2>The longest heading you've ever seen in your life</h2>
+```
+
+The particularly exciting thing about `min-width` and `max-width` is that they let us *mix units*.
+We can specify constraints in pixels, but set a percentage `width`.
+
+#### Height Algorithms
+
+We've seen how widths are calcualted in Flow layout. Setting an element to have a height of `50%` will force that item to take up half of the parent element's content area: no more, no less.
+
+In other ways, they're quite different.
+
+The default "width" behaviour of a block-level element is to fill all the available width, whereas the default "height" behaviour is to be as small as possible while fitting all of the element's content; it's closer to `width: min-content` than `width: auto`!
+
+Also, we tend to treat height as "more dynamic" than width.
+
+We might feel comfortable setting our main content wrapper to have a max width of 750px, but we wouldn't usually do this with height;
+
+We want our design to work whether the content is 200 words, or 20,000 words.
+
+And even for pages with the exact same content, we expect that our containers will grow taller on phone screens, and shorter on desktop monitors.
+
+We generally want to **avoid** setting fixed heights, otherwise we might wind up in a sticky situation.
+
+However, setting a minimum height, is a different story...
+
+For example, let's say that we have an element that wraps around our entire app.
+If a specific page doesn't have much content, the entire app might be less than 100% of our window height.
+
+What if we **want** it to take up at least 100% of the available space?
+
+**Have you ever tried to use a percentage-based height, only to discover that it seems to have no effect?**
+
+The default behavior of an element in terms of height is to be as small as possible, to contain its children.
+
+Our `section` sits inside the `<body>` tag, and so when we set a percentage-based height or `min-height`, the percentage is based on that parent height. `<body>` doesn't have a specific height set, which means it uses the default behaviour: stay as short as possible, while still containing all the children.
+
+In other words, we have an impossible condition: we're telling the `<section>` to be a percentage of the `<body>`, and the `<body>` wants to base its size off of the `<section>`.
+They're both looking to each other for guidance.
+
+**This is a reall common source of confusion.** It isn't fixed by Flexbox or Grid, either; those tools help us control the contents of a container, but that container still needs to get its height from somewhere!
+
+Here's how to fix it:
+
+→ Put `height: 100%` on every element before your main one (including `html` and `body`)
+
+→ Put `min-height: 100%` on that wrapper
+
+→ Don't try and use percentage-based heights within that wrapper
+
+When `html` is given `height: 100%`, it takes up the height of the viewport. That serves as our based. The `body` tag's 100% is based on that base size.
+
+When we get to our wrapper, we want to use `min-height`. This way, the minimum size is equal to the viewport height, but it can overflow and take up more space if required by the content.
+
+![height-algorithm](images/height_algorithm.png)
+
+**By default, width looks UP the tree, while height looks DOWN the tree**.
+An element's **width** is calculated based on its ***parent's size***, but an element's **height** is calculated based on its ***children***.
+
+When it comes to height, a parent element will "shrinking wrap" itself around its children, like a pouch of vacuum-sealed food.
+
+We can override this default behavior by specifying an explicit value. For example, `width: 300px` and `height: 500px` don't look up or down the tree; they don't have to calculate anything, since we're giving it a specific value! 
+So, I'm specifically talking about when we *don't* set `width`/`height`.
+
+
+> What about the **vh** unit ?
+> The **vh** unit was designed exactly for this purpose.
+> If you set `height: 100vh`, your element will inherit its height from the viewport size.
+> Although useful, `vh` is not mobile friendly just yet. So stick to 100% for now.
+
+### Margin Collapse
+
+#### Rules of Margin Collapse
+
+#### Will It Collapse ?
+
+#### Using Margin Effectively
