@@ -1247,7 +1247,215 @@ So, I'm specifically talking about when we *don't* set `width`/`height`.
 
 ### Margin Collapse
 
+#### Intro to Margin Collapse
+
+Margin is akin to "personal space", and let's suppose that we want to keep 6 feet* of personal space.
+
+Those 6 feet can be "shared", if each person has a 6-foot bubble, we don't actually need to be 12 feet away
+
+Margins work in a similar fashion -- adjacent margins will sometimes "collapse", **and overlap**
+
+<hr>
+
+Margin has this tricky thing, unlike padding and border, **it is possible for margin to overlap**
+
+So you have 2 paragraphs, one on top of the other
+And each of those paragraphs wants to have 20px of margin (20px of space).
+
+IF you just put them one on top of the other, you're not going to get 40px between them, you're going to get 20
+
+  -> because the 2 paragraphs are going to share that margin space **AND** this is called **margin collapsing**
+
+> It's the idea that when you have margins that are side by side, they collapse into one space
+
+This sounds simple, but there a lot of little conditions and edge cases that make it actually really hard to develop an intuition for, if you just wing it, taking a little bit of time to familiarize yourself with these rules makes things so much easier, and so much more intuitive
+
+We're going to develop an intuition for how margins collapse when they do and dont. 
+
+![margin-collapse-1](images/margin-collapse-1.png)
+
+![margin-collapse-2](images/margin-collapse-2.png)
+
+Both these images illustrate another instance of margin-collapse.
+
+While `margin: 240px` was placed on the `h1` tag, there was no space between the heading and the white container. Instead it pushed the entire paragraph down.
+
 #### Rules of Margin Collapse
+
+To really understand margin collapse, we need to consider a lot of different circumstances.
+
+Let's go through them one by one, looking at how different situations lead to different results.
+
+**This can be a lot to take in**
+
+##### Only Veritcal Margins Collapse
+
+```html
+<style>
+  p {
+    margin-top: 24px;
+    margin-bottom: 24px;
+  }
+</style>
+
+<p> Paragraph One </p>
+<p> Paragraph Two </p>
+```
+
+Each paragraph has `24px` of vertical margin (`margin-top` and `margin-bottom`), and that margin collapses.
+The paragraphs will be 24px apart, not 48px apart.
+
+*Hover over (or focus) this visualization*.
+
+![vertical-margin-collapse-1](images/vertical-margin-collapse.png)
+
+When margin-collapse was added to the CSS specification, the language designers made a curious choice: **horizontal margins (`margin-left` and `margin-right`) shouldn't collapse**
+
+In the early days, CSS wasn't intended to be used for layouts. The people writing the spec were imaginging headings and paragraphs, not columns and sidebars.
+
+**So that's our first rule: *only vertical margins collapse* **
+
+![vertical-margin-collapse-2](images/vertical-margin-collapse-2.png)
+
+> CSS gives us the power to switch our writing modes, so that block-level elements stack horizontally instead of vertically.
+> What effect do you think this would have on margin collapse?
+
+```html
+<style>
+  html {
+    writing-mode: vertical-lr;
+  }
+
+  p {
+    display: block;
+    margin-block-start: 24px;
+    margin-block-end: 24px;
+  }
+</style>
+
+<p>Paragraph 1</p>
+<p>Paragraph 2</p>
+```
+
+When **block** elements are stacked horizontally, this rule flips: **now**, horizontal margins collapse, **but** vertical margins don't.
+
+So our first rule is a bit of a misnomer;
+it would be more accurate to say that **only block-direction margins collapse**.
+
+Vertical text on the web is relatively rare.
+
+It's important to recognize that English is not the universal language of the web, but almost all web languages are written either from left-to-right, or right-to-left.
+
+##### Margins only collapse in Flow layout
+
+The web has multiple layout modes, like positioned layout, flexbox layout, and grid layout.
+
+Margin collapse is *unique* to **Flow Layout**
+
+##### Only adjacent elements collapse
+
+It is somewhat common to use the `<br />` tag to increase space between block elements
+
+The `<br />` tag is invisible and empty, **but any element between two others will block margins from collapsing**. Elements need to be adjacent in the DOM for their margins to collapse.
+
+And when the margins are asymmetrical... Say, the top element wants 72px of space below, while the bottom element only needs 24px, the bigger number wins.
+
+##### Nesting doesn't prevent collapsing
+
+```html
+<style>
+  p {
+    margin-top: 48px;
+    margin-bottom: 48px;
+  }
+</style>
+
+<div>
+  <p>Paragraph One</p>
+</div>
+<p>Paragraph Two</p>
+```
+
+We're dropping our first paragraph into a containing `<div>`, but the margins will still collapse!
+
+It turns out that many of us have a misconception about how margins work.
+
+Margin is meant to **increase the distance between siblings**. 
+It is **not meant to** increase the gap between a child and its parent's bounding box; **that's what padding is for**.
+
+Margin will always try and increase distance between siblings, e**ven if it means transferring margin to the parent element**!
+In this case, **the effect is the same** as if we had applied the margin to the parent `<div>`, not the child `<p>`.
+
+“But that can't be!”, I can hear you saying. “I've used margin before to increase the distance between the parent and the first child!”
+
+**Margins only collapse when they're touching**.
+Here are some **examples** of nested margins that don't collapse.
+
+##### Blocked by padding or border
+
+You can think of padding/border as a sort of wall;
+if it sits between two margins, they can't collapse, because there's an obstruction in the way
+
+![blocked-by-padding](images/blocked-by-padding.png)
+
+This image shows padding, but the same thing happens with border
+
+Even `1px` of padding or border will cause margins not to collapse
+
+##### Blocked by a gap
+
+As we saw in Height Algorithms, a parent will "**Vacuum-Seal**"
+around a child.
+A 150px-tall single child will have a 150px-tall parent, with no pixels to spare on either side.
+
+But what if we explicitly give our parent element a height?
+Well, that would create a gap underneath the child:
+
+![blocked-by-gap](images/blocked-by-gap.png)
+
+The empty space between the two margins stops them from collapsing, like a moat filled with hungry piranhas
+
+Note that this is on a **per-side basis**.
+In this example, the child's *top* margin could still collapse.
+But because there's some empty space below the child, its bottom margin will never collapse
+
+##### Blocked by a scroll container
+
+The `overflow` property can **create a scoll container**
+If the parent element creates a scroll container, with a declaration like `overflow: auto` or `overflow: hidden`, it will disable margin collapse if the margins are on either side of the scroll container
+
+Here's the takeaway from these three scenarios: **Margins must be touching in order for them to collapse**
+
+##### Margins can collapse in the same direction
+
+So far, all the examples we've seen involve adjacent opposite margins: the bottom of one element overlaps with the top of the next element.
+
+**Surprisingly, margins can collapse even in the same direction.**
+
+![collapse-same-direction](images/collapse-same-direction.png)
+
+```html
+<style>
+  .parent {
+    margin-top: 72px;
+  }
+
+  .child {
+    margin-top: 24px;
+  }
+</style>
+
+<div class="parent">
+  <p class="child">Paragraph One</p>
+</div>
+```
+
+Here's the code for a margin collapse in the same direction.
+
+This is an extension of the previous rule. The child margin is getting "absorbed" into the parent margin.
+The two are combining, and are subject to the same rules of margin-collapse we've seen so far (e.g the biggest one wins)
+
+
 
 #### Will It Collapse ?
 
