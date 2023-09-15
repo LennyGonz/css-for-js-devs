@@ -1337,6 +1337,8 @@ In the early days, CSS wasn't intended to be used for layouts. The people writin
 <p>Paragraph 2</p>
 ```
 
+![margin-misnomer](images/margin-misnomer.png)
+
 When **block** elements are stacked horizontally, this rule flips: **now**, horizontal margins collapse, **but** vertical margins don't.
 
 So our first rule is a bit of a misnomer;
@@ -1348,17 +1350,47 @@ It's important to recognize that English is not the universal language of the we
 
 ##### Margins only collapse in Flow layout
 
-The web has multiple layout modes, like positioned layout, flexbox layout, and grid layout.
+The web has multiple layout modes, like **positioned layout**, **flexbox layout**, and **grid layout**.
 
-Margin collapse is *unique* to **Flow Layout**
+Margin collapse is *unique* to **Flow Layout**. If you have children inside a `display: flex` parent, those children's margins will never collapse.
 
 ##### Only adjacent elements collapse
 
 It is somewhat common to use the `<br />` tag to increase space between block elements
 
+```html
+<style>
+  p {
+    margin-top: 32px;
+    margin-bottom: 32px;
+  }
+</style>
+
+<p>Paragraph One</p>
+<br />
+<p>Paragraph Two</p>
+```
+
+**Regrettably**, this has an adverse effect on our margins:
+
+![adjacent-elements](images/margin-adjacent-elements.png)
+
 The `<br />` tag is invisible and empty, **but any element between two others will block margins from collapsing**. Elements need to be adjacent in the DOM for their margins to collapse.
 
 And when the margins are asymmetrical... Say, the top element wants 72px of space below, while the bottom element only needs 24px, the bigger number wins.
+
+##### Bigger margin wins
+
+What about when the margins are asymmetrical? 
+Say, the top element wants 72px of space below, while the bottom element only needs 24px?
+
+![margin-asymmetrical](images/margin-asymmetrical.png)
+
+The bigger number wins.
+
+This one feels intuitive if you think of margin as "personal space".
+
+If one person needs 6 feet of personal space, and another requires 8 feet of personal space, the two people will keep 8 feet apart.
 
 ##### Nesting doesn't prevent collapsing
 
@@ -1378,12 +1410,15 @@ And when the margins are asymmetrical... Say, the top element wants 72px of spac
 
 We're dropping our first paragraph into a containing `<div>`, but the margins will still collapse!
 
+![nested-margins](images/margin-nesting.png)
+
 It turns out that many of us have a misconception about how margins work.
 
 Margin is meant to **increase the distance between siblings**. 
 It is **not meant to** increase the gap between a child and its parent's bounding box; **that's what padding is for**.
 
-Margin will always try and increase distance between siblings, e**ven if it means transferring margin to the parent element**!
+Margin will always try and increase distance between siblings, **even if it means transferring margin to the parent element**!
+
 In this case, **the effect is the same** as if we had applied the margin to the parent `<div>`, not the child `<p>`.
 
 “But that can't be!”, I can hear you saying. “I've used margin before to increase the distance between the parent and the first child!”
@@ -1396,7 +1431,7 @@ Here are some **examples** of nested margins that don't collapse.
 You can think of padding/border as a sort of wall;
 if it sits between two margins, they can't collapse, because there's an obstruction in the way
 
-![blocked-by-padding](images/blocked-by-padding.png)
+![blocked-by-padding](images/margin-blocked-by-padding.png)
 
 This image shows padding, but the same thing happens with border
 
@@ -1411,7 +1446,7 @@ A 150px-tall single child will have a 150px-tall parent, with no pixels to spare
 But what if we explicitly give our parent element a height?
 Well, that would create a gap underneath the child:
 
-![blocked-by-gap](images/blocked-by-gap.png)
+![blocked-by-gap](images/margin-blocked-by-gap.png)
 
 The empty space between the two margins stops them from collapsing, like a moat filled with hungry piranhas
 
@@ -1432,7 +1467,9 @@ So far, all the examples we've seen involve adjacent opposite margins: the botto
 
 **Surprisingly, margins can collapse even in the same direction.**
 
-![collapse-same-direction](images/collapse-same-direction.png)
+![collapse-same-direction](images/margin-collapse-same-direction.png)
+
+Here's the code for a margin collapse in the same direction.
 
 ```html
 <style>
@@ -1450,13 +1487,69 @@ So far, all the examples we've seen involve adjacent opposite margins: the botto
 </div>
 ```
 
-Here's the code for a margin collapse in the same direction.
+
 
 This is an extension of the previous rule. The child margin is getting "absorbed" into the parent margin.
+
 The two are combining, and are subject to the same rules of margin-collapse we've seen so far (e.g the biggest one wins)
 
+This can lead to big surprises. For example, check out this common frustration:
 
+![common-frustration](images/margin-common-frustration.png)
+
+In this scenario, you might expect the two sections to be touching, with the margin applied inside each container:
+
+![common-frustration2](images/margin-common-frustration2.png)
+
+This seems like a reasonable assumption, since the `<section>`s have no margin at all!
+The intention seems to be to increase the space within the top of each box, to give the paragraphs a bit of breathing room.
+
+The trouble is that 0px margin is still a collapsible margin.
+Each section has 0px top margin, and it gets combined with the 32px top margin on the paragraph.
+Since 32px is the larger of the two, it wins.
+
+##### Negative Margins
+
+Finally, we have one more factor to consider: negative margins.
+As we saw when we looked at Margins, a negative margin will pull an element in the opposite direction.
+
+A sibling with a negative margin-top might overlap its neighbor:
+
+![negative-margin](images/margin-negative.png)
+
+How do negative margins collapse?
+
+Well, it's actually quite similar to positive ones!
+
+The negative margins will share a space, and the size of that space is determined by the most significant negative margin.
+
+In this example, the elements overlap by `75px`, since the more-negative margin `(-75px)` was more significant than the other `(-25px)`.
+
+![negative-margin-2](images/margin-negative-2.png)
+
+What about when negative and positive margins are mixed?
+
+In this case, the numbers are added together. In this example, the -25px negative margin and the 25px positive margin cancel each other out and have no effect, since -25px + 25px is 0.
+
+![negative-positive-margin](images/margin-negative-positive.png)
+
+Why would we want to apply margins that have no effect?! 
+
+Well, sometimes you don't control one of the two margins.
+Maybe it comes from a legacy style, or it's tightly ensconced in a component.
+By applying an inverse negative margin to the parent, you can "cancel out" a margin.
+
+Of course, this is not ideal. Better to remove unwanted margins than to add even more margins! But this hacky fix can be a lifesaver in certain situations.
 
 #### Will It Collapse ?
+
+![will-it-collapse-1](images/will-it-collapse-1.png)
+
+![will-it-collapse-2](images/will-it-collapse-2.png)
+
+![will-it-collapse-3](images/will-it-collapse-3.png)
+
+![will-it-collapse-4](images/will-it-collapse-4.png)
+
 
 #### Using Margin Effectively
